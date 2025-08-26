@@ -1,5 +1,8 @@
 package com.project.batch.domain.product;
 
+import com.project.batch.dto.ProductUploadCsvRow;
+import com.project.batch.util.DateTimeUtils;
+import com.project.batch.util.RandomUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -19,8 +22,7 @@ public class Product {
     private String productName;
     private LocalDate salesStartDate;
     private LocalDate salesEndDate;
-
-    private ProductStatus productStatus;
+    private String productStatus;
     private String brand;
     private String manufacturer;
 
@@ -29,4 +31,22 @@ public class Product {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    public static Product from(ProductUploadCsvRow row) {
+        LocalDateTime now = LocalDateTime.now();
+        return new Product(
+                RandomUtils.generateRandomId(),
+                row.getSellerId(),
+                row.getCategory(),
+                row.getProductName(),
+                DateTimeUtils.toLocalDate(row.getSalesStartDate()),
+                DateTimeUtils.toLocalDate(row.getSalesStartDate()),
+                row.getProductStatus(),
+                row.getBrand(),
+                row.getManufacturer(),
+                row.getSalesPrice(),
+                row.getStockQuantity(),
+                now,
+                now
+        );
+    }
 }
