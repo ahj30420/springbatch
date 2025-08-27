@@ -4,6 +4,7 @@ import com.project.batch.domain.product.Product;
 import com.project.batch.dto.product.download.ProductDownloadCsvRow;
 import com.project.batch.util.ReflectionUtils;
 import java.util.List;
+import java.util.Map;
 import javax.sql.DataSource;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
@@ -17,16 +18,20 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.Order;
 import org.springframework.batch.item.database.PagingQueryProvider;
 import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
+import org.springframework.batch.item.support.SynchronizedItemStreamWriter;
+import org.springframework.batch.item.support.builder.SynchronizedItemStreamWriterBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
@@ -51,8 +56,8 @@ public class ProductDownloadJobConfiguration {
             PlatformTransactionManager transactionManager,
             ItemReader<Product> productPagingReader,
             ItemProcessor<Product, ProductDownloadCsvRow> productDownloadProcessor,
-            ItemWriter<ProductDownloadCsvRow> productCsvWriter
-    ) {
+            ItemWriter<ProductDownloadCsvRow> productCsvWriter,
+            TaskExecutor taskExecutor) {
         return new StepBuilder("productPagingStep", jobRepository)
                 .<Product, ProductDownloadCsvRow>chunk(1000, transactionManager)
                 .reader(productPagingReader)
@@ -60,6 +65,7 @@ public class ProductDownloadJobConfiguration {
                 .writer(productCsvWriter)
                 .allowStartIfComplete(true)
                 .listener(listener)
+                .taskExecutor(taskExecutor)
                 .build();
     }
 
@@ -73,6 +79,7 @@ public class ProductDownloadJobConfiguration {
                 .name("productPagingReader")
                 .queryProvider(pagingQueryProvider)
                 .pageSize(1000)
+                .sortKeys(Map.of("product_id", Order.ASCENDING))
                 .beanRowMapper(Product.class)
                 .build();
     }
@@ -96,16 +103,20 @@ public class ProductDownloadJobConfiguration {
 
     @Bean
     @StepScope
-    public FlatFileItemWriter<ProductDownloadCsvRow> productCsvWriter(
-            @Value("#{jobParameters['outputFilePath']?: '${batch.product.output-file-path}'}") String path
-    ) {
+    public SynchronizedItemStreamWriter<ProductDownloadCsvRow> productCsvWriter(
+            @Value("#{jobParameters['outputFilePath'] ?: '${batch.product.output-file-path}'}") String path
+    ) throws Exception {
         List<String> columns = ReflectionUtils.getFieldNames(ProductDownloadCsvRow.class);
-        return new FlatFileItemWriterBuilder<ProductDownloadCsvRow>()
+        FlatFileItemWriter<ProductDownloadCsvRow> productCsvWriter = new FlatFileItemWriterBuilder<ProductDownloadCsvRow>()
                 .name("productCsvWriter")
                 .resource(new FileSystemResource(path))
                 .delimited()
                 .names(columns.toArray(String[]::new))
                 .headerCallback(writer -> writer.write(String.join(",", columns)))
+                .build();
+
+        return new SynchronizedItemStreamWriterBuilder<ProductDownloadCsvRow>()
+                .delegate(productCsvWriter)
                 .build();
     }
 }
