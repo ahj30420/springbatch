@@ -2,14 +2,20 @@ package com.project.batch.jobconfig.product.upload;
 
 import com.project.batch.domain.product.Product;
 import com.project.batch.dto.ProductUploadCsvRow;
+import com.project.batch.service.file.SplitFilePartitioner;
+import com.project.batch.util.FileUtils;
 import com.project.batch.util.ReflectionUtils;
+import java.io.File;
 import javax.sql.DataSource;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecutionListener;
+import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.partition.PartitionHandler;
+import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
@@ -19,8 +25,9 @@ import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
-import org.springframework.batch.item.support.SynchronizedItemReader;
-import org.springframework.batch.item.support.builder.SynchronizedItemReaderBuilder;
+import org.springframework.batch.item.support.SynchronizedItemStreamReader;
+import org.springframework.batch.item.support.builder.SynchronizedItemStreamReaderBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,15 +41,52 @@ public class ProductUploadJobConfiguration {
     @Bean
     public Job productUploadJob(
             JobRepository jobRepository,
-            Step productUploadStep,
+            @Qualifier("productUploadPartitionStep") Step productUploadPartitionStep,
             JobExecutionListener listener
     ) {
         return new JobBuilder("productUploadJob", jobRepository)
                 .listener(listener)
-                .start(productUploadStep)
+                .start(productUploadPartitionStep)
                 .build();
     }
 
+    @Bean
+    public Step productUploadPartitionStep(
+            JobRepository jobRepository,
+            Step productUploadStep,
+            SplitFilePartitioner splitFilePartitioner,
+            PartitionHandler filePartitionHandler
+    ) {
+        return new StepBuilder("productUploadPartitionStep", jobRepository)
+                .partitioner(productUploadStep.getName(), splitFilePartitioner)
+                .partitionHandler(filePartitionHandler)
+                .allowStartIfComplete(true)
+                .build();
+
+    }
+
+    @Bean
+    @JobScope
+    public SplitFilePartitioner splitFilePartitioner(
+            @Value("#{jobParameters['inputFilePath']}") String path,
+            @Value("#{jobParameters['gridSize']}") int gridSize
+    ) {
+        return new SplitFilePartitioner(FileUtils.splitCsv(new File(path), gridSize));
+    }
+
+    @Bean
+    @JobScope
+    public TaskExecutorPartitionHandler filePartitionHandler(
+            TaskExecutor taskExecutor,
+            @Qualifier("productUploadStep") Step productUploadStep,
+            @Value("#{jobParameters['gridSize']}") int gridSize
+    ) {
+        TaskExecutorPartitionHandler handler = new TaskExecutorPartitionHandler();
+        handler.setTaskExecutor(taskExecutor);
+        handler.setStep(productUploadStep);
+        handler.setGridSize(gridSize);
+        return handler;
+    }
 
     @Bean
     public Step productUploadStep(
@@ -67,20 +111,19 @@ public class ProductUploadJobConfiguration {
 
     @Bean
     @StepScope
-    public SynchronizedItemReader<ProductUploadCsvRow> productReader(
-            @Value("#{jobParameters['inputFilePath']}") String path
+    public SynchronizedItemStreamReader<ProductUploadCsvRow> productReader(
+            @Value("#{stepExecutionContext['file']}") File file
     ) {
         FlatFileItemReader<ProductUploadCsvRow> productReader = new FlatFileItemReaderBuilder<ProductUploadCsvRow>()
                 .name("productReader")
-                .resource(new FileSystemResource(path))
+                .resource(new FileSystemResource(file))
                 .delimited()
                 .names(ReflectionUtils.getFieldNames(ProductUploadCsvRow.class)
                         .toArray(String[]::new))
                 .targetType(ProductUploadCsvRow.class)
-                .linesToSkip(1)
                 .build();
 
-        return new SynchronizedItemReaderBuilder<ProductUploadCsvRow>()
+        return new SynchronizedItemStreamReaderBuilder<ProductUploadCsvRow>()
                 .delegate(productReader).build();
     }
 
