@@ -1,1 +1,3 @@
 rootProject.name = 'springbatch'
+include 'ecommerce-batch'
+
