@@ -1,7 +1,7 @@
 package com.project.batch.util;
 
 import com.project.batch.domain.product.ProductStatus;
-import com.project.batch.dto.ProductUploadCsvRow;
+import com.project.batch.dto.product.upload.ProductUploadCsvRow;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
