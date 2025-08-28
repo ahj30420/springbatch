@@ -1,4 +1,4 @@
-package com.project.ecommerceapi.controller;
+package com.project.ecommerceapi.controller.product;
 
 import com.project.ecommerceapi.domain.product.ProductStatus;
 import com.project.ecommerceapi.service.product.ProductResult;

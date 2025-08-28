@@ -1,4 +1,4 @@
-package com.project.ecommerceapi.controller;
+package com.project.ecommerceapi.controller.product;
 
 import com.project.ecommerceapi.service.product.ProductService;
 import lombok.RequiredArgsConstructor;
