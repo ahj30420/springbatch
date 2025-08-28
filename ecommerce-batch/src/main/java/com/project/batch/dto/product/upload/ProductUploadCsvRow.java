@@ -1,4 +1,4 @@
-package com.project.batch.dto;
+package com.project.batch.dto.product.upload;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

@@ -37,10 +37,6 @@ class ProductUploadJobConfigurationTest extends BaseBatchIntegrationTest {
                 () -> assertJobCompleted(jobExecution));
     }
 
-    private Long countProducts() {
-        return jdbcTemplate.queryForObject("select count(*) from products", Long.class);
-    }
-
     private JobParameters jobParameters() throws IOException {
         return new JobParametersBuilder()
                 .addJobParameter("inputFilePath",

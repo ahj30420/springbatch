@@ -1,7 +1,7 @@
 package com.project.batch.jobconfig.product.upload;
 
 import com.project.batch.domain.product.Product;
-import com.project.batch.dto.ProductUploadCsvRow;
+import com.project.batch.dto.product.upload.ProductUploadCsvRow;
 import com.project.batch.service.file.SplitFilePartitioner;
 import com.project.batch.util.FileUtils;
 import com.project.batch.util.ReflectionUtils;
@@ -53,9 +53,9 @@ public class ProductUploadJobConfiguration {
     @Bean
     public Step productUploadPartitionStep(
             JobRepository jobRepository,
-            Step productUploadStep,
+            @Qualifier("productUploadStep") Step productUploadStep,
             SplitFilePartitioner splitFilePartitioner,
-            PartitionHandler filePartitionHandler
+            @Qualifier("filePartitionHandler") PartitionHandler filePartitionHandler
     ) {
         return new StepBuilder("productUploadPartitionStep", jobRepository)
                 .partitioner(productUploadStep.getName(), splitFilePartitioner)
