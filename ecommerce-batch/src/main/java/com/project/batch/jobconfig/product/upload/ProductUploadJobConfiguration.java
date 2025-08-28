@@ -55,7 +55,7 @@ public class ProductUploadJobConfiguration {
             JobRepository jobRepository,
             @Qualifier("productUploadStep") Step productUploadStep,
             SplitFilePartitioner splitFilePartitioner,
-            PartitionHandler filePartitionHandler
+            @Qualifier("filePartitionHandler") PartitionHandler filePartitionHandler
     ) {
         return new StepBuilder("productUploadPartitionStep", jobRepository)
                 .partitioner(productUploadStep.getName(), splitFilePartitioner)

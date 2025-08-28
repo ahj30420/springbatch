@@ -11,8 +11,8 @@ import com.project.batch.util.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
@@ -50,12 +50,19 @@ class ProductDownloadJobConfigurationTest extends BaseBatchIntegrationTest {
 
         JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
 
+        List<String> expectedLines = Files.readAllLines(expectedResource.getFile().toPath())
+                .stream()
+                .map(String::trim)
+                .toList();
+        List<String> actualLines = Files.readAllLines(outputFile.toPath()).stream()
+                .map(String::trim)
+                .toList();
+
         assertAll(
-                () -> assertThat(Files.readString(Path.of(outputFile.getPath())).trim())
-                        .isEqualTo(Files.readString(Path.of(expectedResource.getFile().getPath()))
-                                .trim()),
+                () -> assertThat(actualLines).isEqualTo(expectedLines),
                 () -> assertJobCompleted(jobExecution)
         );
+
 
     }
 
@@ -80,6 +87,8 @@ class ProductDownloadJobConfigurationTest extends BaseBatchIntegrationTest {
         return new JobParametersBuilder()
                 .addJobParameter("outputFilePath",
                         new JobParameter<>(outputFile.getPath(), String.class, false))
+                .addJobParameter("gridSize",
+                        new JobParameter<>(2, Integer.class, false))
                 .toJobParameters();
     }
 }

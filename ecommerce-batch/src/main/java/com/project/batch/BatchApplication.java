@@ -30,6 +30,7 @@ public class BatchApplication {
         executor.setAllowCoreThreadTimeOut(true);
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(10);
+        executor.initialize();
         return executor;
     }
 
