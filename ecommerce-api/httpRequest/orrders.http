@@ -6,7 +6,7 @@ Content-Type: application/json
   "customerId": 1,
   "orderItems": [
     {
-      "productId": "1727111685047_9c11c683-4726-4908-aa9c-f30ac3f583ab",
+      "productId": "1756377209984_d8d29d4d-7ae1-4553-9c74-11e6d5fb2e53",
       "quantity": 2
     }
   ],
@@ -14,7 +14,7 @@ Content-Type: application/json
 }
 
 ### 결제 완료
-POST http://localhost:8080/v1/orders/6/payment
+POST http://localhost:8080/v1/orders/4/payment
 Content-Type: application/json
 
 {
@@ -30,7 +30,7 @@ Content-Type: application/json
 }
 
 ### 주문 완료
-POST http://localhost:8080/v1/orders/6/complete
+POST http://localhost:8080/v1/orders/4/complete
 Content-Type: application/json
 
 

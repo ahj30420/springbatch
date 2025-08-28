@@ -69,9 +69,9 @@ public class ProductGenerator {
                 randomChoice(PRODUCT_NAMES),
                 randomDate(2020, 2023),
                 randomDate(2024, 2026),
+                randomChoice(STARTUES),
                 randomChoice(BRANDS),
                 randomChoice(MANUFACTURERS),
-                randomChoice(STARTUES),
                 randomSalesPrice(),
                 randomStockQuantity()
         );
