@@ -12,7 +12,13 @@ spring:
       name: transactionReportJob
     jdbc:
       initialize-schema: always
-
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 1000
+        order_updates: true
+        order_inserts: true
 logging:
   level:
     root: INFO

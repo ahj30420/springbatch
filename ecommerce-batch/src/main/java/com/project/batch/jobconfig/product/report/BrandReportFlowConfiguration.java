@@ -1,7 +1,7 @@
 package com.project.batch.jobconfig.product.report;
 
 import com.project.batch.domain.product.report.BrandReport;
-import javax.sql.DataSource;
+import jakarta.persistence.EntityManagerFactory;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.job.builder.FlowBuilder;
@@ -11,10 +11,10 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
-import org.springframework.batch.item.database.JdbcCursorItemReader;
-import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
-import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.database.JpaCursorItemReader;
+import org.springframework.batch.item.database.JpaItemWriter;
+import org.springframework.batch.item.database.builder.JpaCursorItemReaderBuilder;
+import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,36 +48,29 @@ public class BrandReportFlowConfiguration {
     }
 
     @Bean
-    public JdbcCursorItemReader<BrandReport> brandReportReader(DataSource dataSource) {
-        return new JdbcCursorItemReaderBuilder<BrandReport>()
-                .dataSource(dataSource)
+    public JpaCursorItemReader<BrandReport> brandReportReader(
+            EntityManagerFactory entityManagerFactory) {
+        return new JpaCursorItemReaderBuilder<BrandReport>()
+                .entityManagerFactory(entityManagerFactory)
                 .name("brandReportReader")
-                .sql("select brand,"
-                        + "    count(*)                               product_count,"
-                        + "    avg(sales_price)                       avg_sales_price,"
-                        + "    max(sales_price)                       max_sales_price,"
-                        + "    min(sales_price)                       min_sales_price,"
-                        + "    sum(stock_quantity)                    total_stock_quantity,"
-                        + "    avg(stock_quantity)                    avg_stock_quantity,"
-                        + "    sum(sales_price * stock_quantity)      total_stock_value "
-                        + "from products "
-                        + "group by brand")
-                .beanRowMapper(BrandReport.class)
+                .queryString("SELECT new BrandReport(p.brand,"
+                        + "       COUNT(p),"
+                        + "       AVG(p.salesPrice),"
+                        + "       MAX(p.salesPrice),"
+                        + "       MIN(p.salesPrice),"
+                        + "       SUM(p.stockQuantity),"
+                        + "       AVG(p.stockQuantity),"
+                        + "       SUM(p.salesPrice * p.stockQuantity)) "
+                        + "FROM Product p "
+                        + "GROUP BY p.brand")
                 .build();
     }
 
     @Bean
-    public JdbcBatchItemWriter<BrandReport> brandReportWriter(DataSource dataSource) {
-        return new JdbcBatchItemWriterBuilder<BrandReport>()
-                .dataSource(dataSource)
-                .sql("insert into brand_reports("
-                        + "stat_date, brand, product_count, avg_sales_price, "
-                        + "max_sales_price, min_sales_price, total_stock_quantity,"
-                        + "avg_stock_quantity, total_stock_value)"
-                        + "values (:statDate, :brand, :productCount, :avgSalesPrice, :maxSalesPrice, :minSalesPrice,"
-                        + " :totalStockQuantity, :avgStockQuantity, :totalStockValue)"
-                )
-                .beanMapped()
+    public JpaItemWriter<BrandReport> brandReportWriter(EntityManagerFactory entityManagerFactory) {
+        return new JpaItemWriterBuilder<BrandReport>()
+                .entityManagerFactory(entityManagerFactory)
+                .usePersist(true)
                 .build();
     }
 
