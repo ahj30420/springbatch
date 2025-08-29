@@ -1,5 +1,6 @@
 package com.project.batch;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.prometheus.client.exporter.PushGateway;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -34,4 +35,8 @@ public class BatchApplication {
         return executor;
     }
 
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
 }

@@ -37,10 +37,11 @@ public class OrderRequester {
 
         try {
             int page = 0;
-            int size = 1000;
+            int size = 200;
+            int maxPages = 150;
             boolean hasNextPage = true;
 
-            while (hasNextPage && page < 10000) {
+            while (hasNextPage && page < maxPages) {
                 String productsJson = fetchProducts(page, size);
                 JsonNode productsNode = OBJECT_MAPPER.readTree(productsJson);
                 JsonNode contentNode = productsNode.get("content");

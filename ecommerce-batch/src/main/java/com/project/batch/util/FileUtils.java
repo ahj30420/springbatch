@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -17,53 +18,62 @@ import java.util.stream.Stream;
 public class FileUtils {
 
     public static List<File> splitCsv(File csvFile, long fileCount) {
-        long lineCount;
-        try (Stream<String> stream = Files.lines(csvFile.toPath(), StandardCharsets.UTF_8)) {
-            lineCount = stream.count();
-            long linesPerFile = (long) Math.ceil((double) lineCount / fileCount);
+        return splitFileAfterLineCount(csvFile, fileCount, true, ".csv");
+    }
 
-            return splitFiles(csvFile, linesPerFile);
+    public static List<File> splitFileAfterLineCount(File inputFile, long fileCount,
+            boolean ignoreFirstLine, String suffix) {
+        long lineCount;
+        try (Stream<String> stream = Files.lines(inputFile.toPath(), StandardCharsets.UTF_8)) {
+            lineCount = stream.count();
+            return splitFile(inputFile, (long) Math.ceil((double) lineCount / fileCount),
+                    ignoreFirstLine,
+                    suffix);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static List<File> splitFiles(File csvFile, long linesPerFile) throws IOException {
+    public static List<File> splitFile(File inputFile, long linesPerFile, boolean ignoreFirstLine,
+            String suffix)
+            throws IOException {
         List<File> splitFiles = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
-            String line;
-            boolean firstLine = true;
-            BufferedWriter writer = null;
-            int lineCount = 0;
-            boolean shouldCreateFile = true;
-            File splitFile;
-            int fileIndex = 0;
+        BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 
-            while ((line = reader.readLine()) != null) {
-                if (firstLine) {
-                    firstLine = false;
-                    continue;
-                }
+        String line;
+        int fileIndex = 0;
+        int lineCount = 0;
+        File splitFile;
+        BufferedWriter writer = null;
+        boolean firstLine = true;
+        boolean shouldCreateFile = true;
 
-                if (shouldCreateFile) {
-                    splitFile = createTempFile("split_" + (fileIndex++) + "_", ".csv");
-                    writer = new BufferedWriter(new FileWriter(splitFile));
-                    splitFiles.add(splitFile);
-                    lineCount = 0;
-                    shouldCreateFile = false;
-                }
+        while ((line = reader.readLine()) != null) {
 
-                writer.write(line);
-                writer.newLine();
-                lineCount++;
-
-                if (lineCount >= linesPerFile) {
-                    writer.close();
-                    shouldCreateFile = true;
-                }
+            if (ignoreFirstLine && firstLine) {
+                firstLine = false;
+                continue;
             }
-            writer.close();
+            if (shouldCreateFile) {
+                splitFile = createTempFile("split_" + (fileIndex++) + "_", suffix);
+                writer = new BufferedWriter(new FileWriter(splitFile));
+                splitFiles.add(splitFile);
+                lineCount = 0;
+                shouldCreateFile = false;
+            }
+            writer.write(line);
+            writer.newLine();
+            lineCount++;
+
+            if (lineCount >= linesPerFile) {
+                writer.close();
+                shouldCreateFile = true;
+            }
         }
+
+        writer.close();
+        reader.close();
+
         return splitFiles;
     }
 
@@ -73,16 +83,23 @@ public class FileUtils {
         return tempFile;
     }
 
+
     public static void mergeFiles(String header, List<File> files, File outputFile) {
         try (BufferedOutputStream outputStream = new BufferedOutputStream(
                 new FileOutputStream(outputFile))) {
             outputStream.write((header + "\n").getBytes());
-            for (File file : files) {
-                System.out.println("병합 중: " + file.getName());
-                Files.copy(file.toPath(), outputStream);
+            for (File partFile : files) {
+                System.out.println("병합 중: " + partFile.getName());
+                Files.copy(partFile.toPath(), outputStream);
             }
-        } catch (Exception e) {
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static List<File> splitLog(File logFile, long fileCount) {
+        return splitFileAfterLineCount(logFile, fileCount, false, ".log");
     }
 }
