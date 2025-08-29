@@ -4,6 +4,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.project.batch.domain.product.Product;
+import com.project.batch.domain.product.ProductStatus;
 import com.project.batch.jobconfig.BaseBatchIntegrationTest;
 import com.project.batch.service.product.ProductService;
 import com.project.batch.util.DateTimeUtils;
@@ -70,14 +71,14 @@ class ProductDownloadJobConfigurationTest extends BaseBatchIntegrationTest {
 //1,65,화장품,소설,2023-08-12,2026-07-13,아모레퍼시픽,삼성전자,OUT_OF_STOCK,273924,882,2025-08-27 14:24:40.452,2025-08-27 14:24:40.452
 //2,86,화장품,스마트폰,2020-06-16,2026-10-27,LG,LG전자,DISCOUNTINUED,106587,257,2025-08-27 14:25:40.452,2025-08-27 14:25:40.452
         productService.save(Product.of("1", 65L, "화장품", "소설",
-                LocalDate.of(2023, 8, 12), LocalDate.of(2026, 7, 13), "아모레퍼시픽",
-                "삼성전자", "OUT_OF_STOCK", 273924, 882,
+                LocalDate.of(2023, 8, 12), LocalDate.of(2026, 7, 13), ProductStatus.OUT_OF_STOCK,
+                "삼성전자", "아모레퍼시픽", 273924, 882,
                 DateTimeUtils.toLocalDateTime("2025-08-27 14:24:40.452"),
                 DateTimeUtils.toLocalDateTime("2025-08-27 14:24:40.452")
         ));
         productService.save(Product.of("2", 86L, "화장품", "스마트폰",
-                LocalDate.of(2020, 6, 16), LocalDate.of(2026, 10, 27), "LG",
-                "LG전자", "DISCOUNTINUED", 106587, 257,
+                LocalDate.of(2020, 6, 16), LocalDate.of(2026, 10, 27), ProductStatus.DISCOUNTINUED,
+                "LG전자", "LG", 106587, 257,
                 DateTimeUtils.toLocalDateTime("2025-08-27 14:25:40.452"),
                 DateTimeUtils.toLocalDateTime("2025-08-27 14:25:40.452")
         ));
